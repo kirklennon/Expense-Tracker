@@ -21,6 +21,11 @@ function validateExpense() {
 		return 'Price and description are required';
 		}
 }
+
+function deleteButton($row) {
+	echo('<a href="#" onclick="return false"');
+	echo('X'</a>);
+}
 	
 ?>
 
@@ -28,6 +33,7 @@ function validateExpense() {
 
 session_start();
 
+// handle request to create a new expense
 if ( isset($_POST['price']) OR isset($_POST['description']) ) {
 	
 	$msg = validateExpense();
@@ -46,6 +52,18 @@ if ( isset($_POST['price']) OR isset($_POST['description']) ) {
 		':description' => $_POST['description']));
 
 	$_SESSION['success'] = 'Expense Added';
+	header( 'Location: index.php' );
+	return;
+}
+
+// handle request to delete an expense 
+if ( isset($_POST['delete']) && isset($_POST['delete_price']) && isset($_POST['delete_description']) ) {
+	$sql = "DELETE FROM Expenses WHERE (price = :delete_price AND description = :delete_description)";
+	$stmt = $pdo->prepare($sql);
+	$stmt->execute(array(
+		':price' => intval($_POST['delete_price']),
+		':description' => $_POST['delete_description']));
+	$_SESSION['success'] = 'Record deleted';
 	header( 'Location: index.php' );
 	return;
 }
@@ -159,21 +177,23 @@ if ( isset($_POST['price']) OR isset($_POST['description']) ) {
 	</form>
 	
 	<table>
-		
+		<form method="post" id="deleteForm">
+			<input type="hidden" value="delete">
 	<?php
 		echo('<thead>Current month purchases</thead>');
-		$stmt = $pdo->query('select * from Expenses where month(date) = month(current_date());');
+		$stmt = $pdo->query('select * from Expenses where month(date) = month(current_date()) order by date desc;');
 		while ($row = $stmt->fetch(PDO::FETCH_ASSOC) ) {
 			echo('<tr><td>');
 			echo('$' . $row['price']);
 			echo('</td><td>');
 			echo($row['description']);
 			echo('</td><td>');
-			echo('X');
+			deleteButton($row);
 			echo("</td></tr>\n");
 		}
 
 	?>
+		</form>
 	</table>
 	
 	
