@@ -22,9 +22,9 @@ function validateExpense() {
 		}
 }
 
-function deleteButton($row) {
-	echo('<a href="#" onclick="return false"');
-	echo('X'</a>);
+function deleteButton($delete_price, $delete_description) {
+	echo('<a href="#" onclick="document.deleteForm.delete_price.value = ' . $delete_price . '; document.deleteForm.delete_description.value = \'' . $delete_description . '\'; document.getElementById(\'deleteForm\').submit();">');
+	echo('X</a>');
 }
 	
 ?>
@@ -57,12 +57,12 @@ if ( isset($_POST['price']) OR isset($_POST['description']) ) {
 }
 
 // handle request to delete an expense 
-if ( isset($_POST['delete']) && isset($_POST['delete_price']) && isset($_POST['delete_description']) ) {
+if ( isset($_POST['delete_price']) && isset($_POST['delete_description']) ) {
 	$sql = "DELETE FROM Expenses WHERE (price = :delete_price AND description = :delete_description)";
 	$stmt = $pdo->prepare($sql);
 	$stmt->execute(array(
-		':price' => intval($_POST['delete_price']),
-		':description' => $_POST['delete_description']));
+		':delete_price' => intval($_POST['delete_price']),
+		':delete_description' => $_POST['delete_description']));
 	$_SESSION['success'] = 'Record deleted';
 	header( 'Location: index.php' );
 	return;
@@ -91,16 +91,20 @@ if ( isset($_POST['delete']) && isset($_POST['delete_price']) && isset($_POST['d
 			width: 100%;
 			margin: 0;
 		}
-		header {
-			/* width: 100%; */
-			/* background-color: #eee; */
+		header, h2, p {
 			text-align: center;
 			color: #639;
 		}
-		header h1 {
+		h1 {
 			font-size: 3.5rem;
 			line-height: 0;
-			margin-top: 0.3em;}
+			margin-top: 0.4em;
+		}
+		h2 {font-size: 2.5rem;
+			line-height: 0;
+			margin-top: 0.3em;
+		}
+		p {margin-bottom: 0.1em;}
 		main {
 			display: flex;
 			flex-direction: column;
@@ -118,6 +122,7 @@ if ( isset($_POST['delete']) && isset($_POST['delete_price']) && isset($_POST['d
 		thead {
 			font-weight: bold;
 		}
+		tr {line-height: 120%;}
 		form {
 			padding-bottom: 1em;
 			text-align: center;
@@ -142,6 +147,10 @@ if ( isset($_POST['delete']) && isset($_POST['delete_price']) && isset($_POST['d
 		input::-webkit-inner-spin-button {
 		  -webkit-appearance: none;
 		}
+		a {
+			text-decoration: none;
+			color: orangered;
+		}
 		
 		</style>
 	
@@ -152,8 +161,7 @@ if ( isset($_POST['delete']) && isset($_POST['delete_price']) && isset($_POST['d
 <div id="wrapper">
 	 
 <header>
-	
-	<p>Total This Month:</p>
+	<p>Total this month:</p>
 	<h1>
 		<?php
 		$res1 = $pdo->prepare("select sum(price) as monthlysum from Expenses where month(date) = month(current_date());");
@@ -177,8 +185,9 @@ if ( isset($_POST['delete']) && isset($_POST['delete_price']) && isset($_POST['d
 	</form>
 	
 	<table>
-		<form method="post" id="deleteForm">
-			<input type="hidden" value="delete">
+		<form method="post" id="deleteForm" name="deleteForm">
+			<input type="hidden" name="delete_description" value="">
+			<input type="hidden" name="delete_price" value="">
 	<?php
 		echo('<thead>Current month purchases</thead>');
 		$stmt = $pdo->query('select * from Expenses where month(date) = month(current_date()) order by date desc;');
@@ -188,34 +197,23 @@ if ( isset($_POST['delete']) && isset($_POST['delete_price']) && isset($_POST['d
 			echo('</td><td>');
 			echo($row['description']);
 			echo('</td><td>');
-			deleteButton($row);
+			deleteButton($row['price'], $row['description']);
 			echo("</td></tr>\n");
 		}
 
 	?>
 		</form>
 	</table>
-	
-	
 
-	
-
-<table>
-	<thead>Prior monthly totals</thead>
-	<tr>
-		<td>$3874</td>
-		<td>December 2022</td>
-	</tr>
-	<tr>
-		<td>$4538</td>
-		<td>November 2022</td>
-	</tr>
-	<tr>
-		<td>$4125</td>
-		<td>October 2022</td>
-	</tr>
-</table>
-
+<p>Total last month:</p>	
+<?php
+$res1 = $pdo->prepare("select sum(price) as monthlysum from Expenses where month(date) = month(current_date())-1;");
+$res1->execute();
+while ($row = $res1->fetch(PDO::FETCH_ASSOC))
+{
+echo "<h2>$" . "$row[monthlysum]" . "</h2>";
+}
+?>
 
 </main>
 
